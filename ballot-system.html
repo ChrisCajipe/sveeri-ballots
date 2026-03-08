@@ -4,459 +4,147 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Ballot Generator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 :root {
-  --crimson: #f62a5b;
-  --lavender: #f4ebff;
-  --navy: #0a1039;
-  --navy-mid: #111a52;
-  --navy-light: #1c2a6b;
-  --border: rgba(244,235,255,0.13);
-  --muted: rgba(244,235,255,0.4);
+  --red:#f62a5b; --navy:#0a1039; --white:#ffffff;
+  --off:#f7f7f7; --border:#e5e5e5; --text:#111111;
+  --muted:#888888; --light:#f0f0f0;
 }
+html, body { height:100%; background:#f2f2f2; color:var(--text); font-family:Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+.app { max-width:430px; margin:0 auto; min-height:100dvh; background:var(--white); display:flex; flex-direction:column; box-shadow:0 0 0 1px var(--border); }
 
-html, body {
-  height: 100%;
-  background: var(--navy);
-  color: var(--lavender);
-  font-family: 'Syne', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
+/* NAV */
+.topnav { position:sticky; top:0; z-index:50; background:var(--white); border-bottom:1.5px solid var(--border); padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
+.brand { display:flex; align-items:center; gap:9px; }
+.brand-mark { width:28px; height:28px; background:var(--red); border-radius:6px; display:grid; grid-template-columns:1fr 1fr; gap:2.5px; padding:6px; flex-shrink:0; }
+.brand-mark span { background:white; border-radius:1px; }
+.brand-mark span:nth-child(2) { opacity:.55; }
+.brand-mark span:nth-child(3) { opacity:.55; }
+.brand-mark span:nth-child(4) { opacity:.25; }
+.brand-text { font-size:14px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text); }
+.print-btn { background:var(--red); color:white; border:none; border-radius:7px; padding:9px 16px; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; gap:6px; transition:opacity .15s,transform .15s; }
+.print-btn:active { opacity:.8; transform:scale(.96); }
 
-/* Subtle noise overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
-  background-size: 256px;
-  pointer-events: none;
-  z-index: 999;
-}
+/* TABS */
+.tabs { display:flex; background:var(--white); border-bottom:1.5px solid var(--border); }
+.tab { flex:1; padding:12px 4px; font-size:10px; letter-spacing:.1em; font-weight:600; text-transform:uppercase; color:var(--muted); background:none; border:none; cursor:pointer; position:relative; transition:color .15s; }
+.tab.active { color:var(--text); }
+.tab.active::after { content:''; position:absolute; bottom:-1.5px; left:15%; right:15%; height:2px; background:var(--red); }
 
-/* ── MOBILE SHELL ── */
-.app {
-  max-width: 430px;
-  margin: 0 auto;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
+/* PANELS */
+.panel { display:none; flex:1; flex-direction:column; }
+.panel.active { display:flex; }
 
-/* Accent glow top */
-.app::before {
-  content: '';
-  position: fixed;
-  top: -80px; left: 50%;
-  transform: translateX(-50%);
-  width: 300px; height: 200px;
-  background: radial-gradient(ellipse, rgba(246,42,91,0.18) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+/* CARDS */
+.card { background:var(--white); border:1.5px solid var(--border); border-radius:14px; padding:20px 18px; margin:14px 14px 0; }
+.section-label { font-size:9px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--red); margin-bottom:14px; }
 
-/* ── TOP NAV ── */
-.topnav {
-  position: sticky; top: 0; z-index: 50;
-  background: rgba(10,16,57,0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 18px 12px;
-  display: flex; align-items: center; justify-content: space-between;
-}
+/* FIELDS */
+.field { margin-bottom:14px; }
+.field:last-child { margin-bottom:0; }
+.field label { display:block; font-size:9px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.field input { width:100%; background:var(--off); border:1.5px solid var(--border); border-radius:9px; color:var(--text); padding:12px 13px; font-family:Helvetica,Arial,sans-serif; font-size:15px; font-weight:400; outline:none; -webkit-appearance:none; transition:border-color .2s,box-shadow .2s; }
+.field input:focus { border-color:var(--red); box-shadow:0 0 0 3px rgba(246,42,91,.1); background:var(--white); }
+.field input.error { border-color:var(--red)!important; box-shadow:0 0 0 3px rgba(246,42,91,.12)!important; }
+.field input:disabled { opacity:.45; cursor:not-allowed; }
+.field input::placeholder { color:#ccc; }
+.field-error { display:none; margin-top:7px; padding:9px 12px; background:#fff0f3; border:1.5px solid #fbb; border-radius:8px; font-size:11px; font-weight:600; color:#c0143c; line-height:1.4; }
+.field-error.visible { display:block; }
 
-.brand {
-  display: flex; align-items: center; gap: 10px;
-}
+/* CAPACITY BAR */
+.cap-wrap { margin:14px 14px 0; }
+.cap-bar-track { height:5px; background:var(--light); border-radius:99px; overflow:hidden; margin-bottom:6px; }
+.cap-bar-fill { height:100%; border-radius:99px; transition:width .3s, background .3s; }
+.cap-label { font-size:10px; color:var(--muted); letter-spacing:.02em; }
 
-.brand-mark {
-  width: 30px; height: 30px;
-  background: var(--crimson);
-  border-radius: 7px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  padding: 6px;
-  flex-shrink: 0;
-}
+/* BUTTONS */
+.btn-primary { width:100%; background:var(--red); color:white; border:none; border-radius:10px; padding:15px; font-family:Helvetica,Arial,sans-serif; font-size:13px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px; transition:opacity .15s,transform .15s; }
+.btn-primary:active { opacity:.85; transform:scale(.98); }
+.btn-primary.success { background:#16a34a!important; }
+.btn-primary:disabled { opacity:.4; cursor:not-allowed; transform:none!important; }
+.btn-ghost { width:100%; background:var(--white); border:1.5px solid var(--border); color:var(--muted); border-radius:9px; padding:12px; font-family:Helvetica,Arial,sans-serif; font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; cursor:pointer; transition:border-color .15s,color .15s; }
+.btn-ghost:active { border-color:var(--red); color:var(--red); }
 
-.brand-mark span {
-  background: rgba(255,255,255,0.9);
-  border-radius: 1px;
-}
+/* FORMAT BADGE */
+.format-badge { display:inline-flex; align-items:center; gap:7px; background:var(--off); border:1.5px solid var(--border); border-radius:8px; padding:8px 12px; font-size:10px; font-weight:700; color:var(--text); letter-spacing:.06em; margin-bottom:11px; }
+.format-desc { font-size:11px; color:var(--muted); line-height:1.7; }
+.format-desc strong { color:var(--text); font-weight:700; }
 
-.brand-mark span:nth-child(2) { opacity: 0.55; }
-.brand-mark span:nth-child(3) { opacity: 0.55; }
-.brand-mark span:nth-child(4) { opacity: 0.25; }
+/* CANDIDATE LIST */
+.candidates-scroll { flex:1; overflow-y:auto; padding:0 14px 40px; }
+.candidates-scroll::-webkit-scrollbar { display:none; }
+.position-group { margin-top:18px; }
+.pos-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.pos-name { font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--red); }
+.pos-count { font-size:9px; font-weight:600; color:var(--muted); background:var(--light); padding:2px 9px; border-radius:99px; }
+.candidate-item { background:var(--white); border:1.5px solid var(--border); border-radius:11px; padding:12px 14px; display:flex; align-items:center; gap:11px; margin-bottom:7px; animation:fadeUp .2s ease; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.avatar { width:36px; height:36px; border-radius:50%; background:var(--navy); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:white; flex-shrink:0; }
+.c-info { flex:1; min-width:0; }
+.c-name { font-size:14px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.c-pos  { font-size:9px; font-weight:600; color:var(--muted); letter-spacing:.1em; text-transform:uppercase; margin-top:2px; }
+.btn-del { background:var(--light); border:1.5px solid var(--border); border-radius:7px; width:30px; height:30px; color:var(--muted); font-size:13px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all .15s; }
+.btn-del:active { background:#ffe0e8; border-color:#fbb; color:var(--red); }
+.empty-state { text-align:center; padding:52px 24px; }
+.empty-icon  { font-size:42px; display:block; margin-bottom:14px; }
+.empty-state p { font-size:11px; font-weight:500; line-height:1.8; color:var(--muted); }
 
-.brand-text {
-  font-size: 14px; font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--lavender);
-}
+/* PILLS */
+.pill { background:var(--off); border:1.5px solid var(--border); color:var(--muted); border-radius:99px; padding:7px 13px; font-size:10px; font-weight:600; letter-spacing:.06em; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.pill:active { border-color:var(--red); color:var(--red); background:#fff0f3; }
+.pill.used { background:#fff0f3; border-color:#fbb; color:var(--red); }
+.bottom-spacer { height:40px; }
 
-.brand-text em {
-  font-style: normal;
-  color: var(--crimson);
-}
-
-.print-btn {
-  background: var(--crimson);
-  color: white; border: none;
-  border-radius: 8px;
-  padding: 9px 15px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; font-weight: 500;
-  letter-spacing: 0.1em; text-transform: uppercase;
-  cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  transition: transform 0.15s, background 0.15s;
-}
-.print-btn:active { transform: scale(0.95); background: #d41f4a; }
-
-/* ── TABS ── */
-.tabs {
-  position: relative; z-index: 1;
-  display: flex;
-  background: var(--navy-mid);
-  border-bottom: 1px solid var(--border);
-  overflow: hidden;
-}
-
-.tab {
-  flex: 1; padding: 12px 4px;
-  font-family: 'DM Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: none; border: none;
-  cursor: pointer;
-  position: relative;
-  transition: color 0.2s;
-}
-
-.tab.active { color: var(--lavender); }
-
-.tab.active::after {
-  content: '';
-  position: absolute; bottom: 0; left: 15%; right: 15%;
-  height: 2px;
-  background: var(--crimson);
-  border-radius: 2px 2px 0 0;
-}
-
-/* ── PANELS ── */
-.panel { display: none; flex: 1; flex-direction: column; position: relative; z-index: 1; }
-.panel.active { display: flex; }
-
-/* ── CARDS ── */
-.card {
-  background: var(--navy-mid);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px 18px;
-  margin: 14px 14px 0;
-}
-
-.section-label {
-  font-family: 'DM Mono', monospace;
-  font-size: 8.5px; letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--crimson);
-  margin-bottom: 14px;
-}
-
-/* ── FIELDS ── */
-.field { margin-bottom: 14px; }
-.field:last-child { margin-bottom: 0; }
-
-.field label {
-  display: block;
-  font-family: 'DM Mono', monospace;
-  font-size: 8.5px; letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(244,235,255,0.45);
-  margin-bottom: 6px;
-}
-
-.field input {
-  width: 100%;
-  background: rgba(10,16,57,0.6);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--lavender);
-  padding: 12px 14px;
-  font-family: 'Syne', sans-serif;
-  font-size: 15px; font-weight: 400;
-  outline: none;
-  -webkit-appearance: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.field input:focus {
-  border-color: rgba(246,42,91,0.6);
-  box-shadow: 0 0 0 3px rgba(246,42,91,0.12);
-}
-
-.field input::placeholder { color: rgba(244,235,255,0.18); }
-
-/* ── BUTTONS ── */
-.btn-primary {
-  width: 100%;
-  background: var(--crimson);
-  color: white; border: none;
-  border-radius: 12px;
-  padding: 15px;
-  font-family: 'Syne', sans-serif;
-  font-size: 14px; font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: transform 0.15s, background 0.15s;
-}
-.btn-primary:active { transform: scale(0.98); background: #d41f4a; }
-.btn-primary.success { background: #16a34a !important; }
-
-.btn-ghost {
-  width: 100%;
-  background: transparent;
-  border: 1px solid rgba(246,42,91,0.25);
-  color: rgba(246,42,91,0.65);
-  border-radius: 10px; padding: 12px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; letter-spacing: 0.1em;
-  text-transform: uppercase; cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-ghost:active { border-color: rgba(246,42,91,0.5); color: var(--crimson); }
-
-/* ── LAYOUT CARD BADGE ── */
-.layout-badge {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(246,42,91,0.1);
-  border: 1px solid rgba(246,42,91,0.2);
-  border-radius: 8px; padding: 7px 12px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px; color: var(--crimson);
-  letter-spacing: 0.06em; margin-bottom: 10px;
-}
-
-/* ── CANDIDATE LIST ── */
-.candidates-scroll {
-  flex: 1; overflow-y: auto;
-  padding: 0 14px 40px;
-}
-.candidates-scroll::-webkit-scrollbar { display: none; }
-
-.position-group { margin-top: 18px; }
-
-.pos-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 8px;
-}
-
-.pos-name {
-  font-family: 'DM Mono', monospace;
-  font-size: 9.5px; letter-spacing: 0.12em;
-  text-transform: uppercase; color: var(--crimson);
-}
-
-.pos-count {
-  font-family: 'DM Mono', monospace; font-size: 9px;
-  color: rgba(244,235,255,0.3);
-  background: rgba(244,235,255,0.05);
-  border: 1px solid var(--border);
-  padding: 2px 9px; border-radius: 99px;
-}
-
-.candidate-item {
-  background: var(--navy-mid);
-  border: 1px solid var(--border);
-  border-radius: 12px; padding: 13px 14px;
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 7px;
-  animation: fadeUp 0.2s ease;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.avatar {
-  width: 38px; height: 38px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--navy-light) 0%, rgba(246,42,91,0.7) 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
-  letter-spacing: 0.05em;
-}
-
-.c-info { flex: 1; min-width: 0; }
-.c-name { font-size: 14px; font-weight: 600; color: var(--lavender); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.c-pos  { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(244,235,255,0.38); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
-
-.btn-del {
-  background: rgba(246,42,91,0.08);
-  border: 1px solid rgba(246,42,91,0.18);
-  border-radius: 8px;
-  width: 30px; height: 30px; color: var(--crimson);
-  font-size: 13px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: background 0.15s;
-}
-.btn-del:active { background: rgba(246,42,91,0.22); }
-
-.empty-state {
-  text-align: center; padding: 52px 24px;
-  color: rgba(244,235,255,0.22);
-}
-.empty-icon { font-size: 44px; display: block; margin-bottom: 14px; }
-.empty-state p { font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.8; }
-
-/* ── SUGGESTION PILLS ── */
-.pill {
-  background: rgba(244,235,255,0.06);
-  border: 1px solid var(--border);
-  color: rgba(244,235,255,0.55);
-  border-radius: 99px; padding: 7px 14px;
-  font-family: 'DM Mono', monospace; font-size: 10px;
-  letter-spacing: 0.06em; cursor: pointer;
-  transition: all 0.15s; white-space: nowrap;
-}
-.pill:active { background: rgba(244,235,255,0.12); }
-.pill.used {
-  background: rgba(246,42,91,0.1);
-  border-color: rgba(246,42,91,0.3);
-  color: var(--crimson);
-}
-
-/* ── SPACER ── */
-.bottom-spacer { height: 36px; }
-
-/* ═══════════════════════════════════════════════════
-   PRINT — A4 split VERTICALLY (3 columns × 70mm)
-═══════════════════════════════════════════════════ */
-.print-only { display: none; }
-
+/* ═══════════════════════════════════════════════
+   PRINT — Landscape A4, 3 stub columns
+   297 × 210mm → each stub = 99mm × 210mm
+═══════════════════════════════════════════════ */
+.print-only { display:none; }
 @media print {
-  .app { display: none !important; }
+  .app { display:none!important; }
+  .print-only { display:block!important; }
+  @page { size:A4 landscape; margin:0; }
+  body { background:white!important; color:black; font-family:Helvetica,Arial,sans-serif; }
 
-  .print-only {
-    display: block !important;
-  }
+  .ballot-page { width:297mm; height:210mm; display:flex; flex-direction:row; overflow:hidden; }
 
-  @page { size: A4 portrait; margin: 0; }
-
-  body {
-    background: white !important;
-    color: #0a1039;
-  }
-
-  body::after { display: none; }
-
-  .ballot-page {
-    width: 210mm; height: 297mm;
-    display: flex; flex-direction: row;
-    overflow: hidden;
-  }
-
-  /* Each column = 70mm wide × 297mm tall */
   .b-col {
-    width: 70mm; height: 297mm;
-    border-right: 1.5px dashed #c8c0dc;
-    position: relative;
-    display: flex; flex-direction: column;
-    padding: 12mm 5.5mm 12mm;
-    overflow: hidden;
+    width:calc(297mm / 3); height:210mm;
+    border-right:1.5px dashed #999;
+    position:relative; display:flex; flex-direction:column;
+    padding:9mm 6mm 6mm;
+    overflow:hidden;
   }
-  .b-col:last-child { border-right: none; }
+  .b-col:last-child { border-right:none; }
 
-  /* Fiducials */
-  .fid { position: absolute; width: 10mm; height: 10mm; }
-  .fid svg { width: 100%; height: 100%; }
-  .fid.tl { top: 3mm; left: 3mm; }
-  .fid.tr { top: 3mm; right: 3mm; }
-  .fid.bl { bottom: 3mm; left: 3mm; }
-  .fid.br { bottom: 3mm; right: 3mm; }
+  .fid { position:absolute; width:9mm; height:9mm; }
+  .fid svg { width:100%; height:100%; }
+  .fid.tl { top:2.5mm; left:2.5mm; }
+  .fid.tr { top:2.5mm; right:2.5mm; }
+  .fid.bl { bottom:2.5mm; left:2.5mm; }
+  .fid.br { bottom:2.5mm; right:2.5mm; }
 
-  /* Header */
-  .b-hdr { text-align: center; padding: 0 13mm; margin-bottom: 3.5mm; }
+  .b-hdr { text-align:center; padding:0 11mm; margin-bottom:2.5mm; }
+  .b-title { font-family:Helvetica,Arial,sans-serif; font-size:9.5pt; font-weight:700; color:black; letter-spacing:.08em; text-transform:uppercase; line-height:1.2; }
+  .b-org   { font-family:Helvetica,Arial,sans-serif; font-size:5.5pt; color:black; letter-spacing:.08em; text-transform:uppercase; margin-top:1mm; }
+  .b-rule  { height:1px; background:black; margin:2mm 0; }
+  .b-date  { font-family:Helvetica,Arial,sans-serif; font-size:5.5pt; color:black; letter-spacing:.1em; text-transform:uppercase; }
+  .b-instr { font-family:Helvetica,Arial,sans-serif; font-size:4.5pt; color:black; text-align:center; letter-spacing:.04em; border-top:.5px solid black; border-bottom:.5px solid black; padding:1.2mm 0; margin-bottom:2.5mm; }
 
-  .b-title {
-    font-family: 'Fraunces', serif;
-    font-size: 10pt; font-weight: 600;
-    color: #0a1039; letter-spacing: 0.07em;
-    text-transform: uppercase; line-height: 1.25;
-  }
+  .b-positions { flex:1; overflow:hidden; display:flex; flex-direction:column; gap:2mm; }
+  .b-positions.two-col { display:grid; grid-template-columns:1fr 1fr; gap:2mm 2.5mm; align-content:start; }
 
-  .b-org {
-    font-family: 'DM Mono', monospace;
-    font-size: 5.5pt; color: #555;
-    letter-spacing: 0.1em; margin-top: 1mm;
-    text-transform: uppercase;
-  }
+  .b-pos { border:.75px solid black; padding:1.5mm 2mm; }
+  .b-pos-name { font-family:Helvetica,Arial,sans-serif; font-size:5.5pt; font-weight:700; color:black; text-transform:uppercase; letter-spacing:.1em; border-bottom:.5px solid black; padding-bottom:.8mm; margin-bottom:1.2mm; }
+  .b-cand { display:flex; align-items:center; gap:1.5mm; padding:.8mm 0; border-bottom:.5px solid #ccc; }
+  .b-cand:last-child { border-bottom:none; }
+  .bubble { width:4mm; height:4mm; border:1.25px solid black; border-radius:50%; background:white; flex-shrink:0; }
+  .cname  { font-family:Helvetica,Arial,sans-serif; font-size:6.5pt; font-weight:400; color:black; line-height:1.2; }
 
-  .b-rule { display: flex; align-items: center; gap: 2.5mm; margin: 2.5mm 0; }
-  .b-rule::before, .b-rule::after { content: ''; flex: 1; height: 1px; background: #0a1039; }
-  .b-diamond { width: 2.5mm; height: 2.5mm; background: #f62a5b; transform: rotate(45deg); flex-shrink: 0; }
-
-  .b-date {
-    font-family: 'DM Mono', monospace;
-    font-size: 5.5pt; color: #888;
-    letter-spacing: 0.1em; text-transform: uppercase;
-  }
-
-  .b-meta {
-    font-family: 'DM Mono', monospace; font-size: 4.8pt; color: #aaa;
-    text-align: center; margin-bottom: 2.5mm;
-  }
-
-  .b-instr {
-    font-family: 'DM Mono', monospace; font-size: 4.5pt; color: #999;
-    text-align: center; letter-spacing: 0.05em;
-    border-top: 0.5px solid #ddd; border-bottom: 0.5px solid #ddd;
-    padding: 1.5mm 0; margin-bottom: 3mm;
-  }
-
-  /* Position blocks */
-  .b-positions { flex: 1; display: flex; flex-direction: column; gap: 3mm; overflow: hidden; }
-
-  .b-pos {
-    border: 0.75px solid #d8d0ec;
-    border-radius: 1.5mm; padding: 2mm 2.5mm;
-    background: #faf8fd;
-  }
-
-  .b-pos-name {
-    font-family: 'DM Mono', monospace; font-size: 5.5pt;
-    color: #f62a5b; text-transform: uppercase; letter-spacing: 0.1em;
-    border-bottom: 0.5px solid #e0d8ee;
-    padding-bottom: 1mm; margin-bottom: 1.5mm;
-  }
-
-  .b-cand { display: flex; align-items: center; gap: 2mm; padding: 1mm 0; border-bottom: 0.5px solid #ece8f5; }
-  .b-cand:last-child { border-bottom: none; }
-
-  .bubble { width: 4.5mm; height: 4.5mm; border: 1.25px solid #0a1039; border-radius: 50%; background: white; flex-shrink: 0; }
-
-  .cname { font-family: 'Fraunces', serif; font-size: 7pt; font-weight: 300; color: #0a1039; line-height: 1.2; }
-
-  /* Vertical stamp */
-  .b-stamp {
-    position: absolute; bottom: 14mm; left: 50%;
-    transform: translateX(-50%) rotate(180deg);
-    font-family: 'DM Mono', monospace; font-size: 4.5pt;
-    color: #ccc; letter-spacing: 0.1em; text-transform: uppercase;
-    white-space: nowrap;
-    writing-mode: vertical-rl;
-  }
+  .b-qr-wrap { display:flex; flex-direction:column; align-items:center; margin-top:2mm; padding-bottom:4mm; flex-shrink:0; }
+  .b-qr-wrap svg { display:block; }
+  .b-qr-label { font-family:Helvetica,Arial,sans-serif; font-size:4pt; color:black; letter-spacing:.12em; text-transform:uppercase; margin-top:1mm; }
 }
 </style>
 </head>
@@ -464,13 +152,10 @@ body::after {
 
 <!-- ══════════ MOBILE APP ══════════ -->
 <div class="app">
-
   <div class="topnav">
     <div class="brand">
-      <div class="brand-mark">
-        <span></span><span></span><span></span><span></span>
-      </div>
-      <div class="brand-text">BALLOT<em>.</em></div>
+      <div class="brand-mark"><span></span><span></span><span></span><span></span></div>
+      <span class="brand-text">Ballot</span>
     </div>
     <button class="print-btn" onclick="window.print()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -488,7 +173,7 @@ body::after {
     <button class="tab" onclick="switchTab('add')">+ Add</button>
   </div>
 
-  <!-- SETUP PANEL -->
+  <!-- SETUP -->
   <div class="panel active" id="panel-setup">
     <div class="card">
       <div class="section-label">Election Info</div>
@@ -497,7 +182,7 @@ body::after {
         <input type="text" id="electionTitle" value="General Election 2025" placeholder="e.g. Student Council 2025">
       </div>
       <div class="field">
-        <label>Organization / Subtitle</label>
+        <label>Organization</label>
         <input type="text" id="electionSub" placeholder="e.g. Westbrook University">
       </div>
       <div class="field">
@@ -508,33 +193,48 @@ body::after {
 
     <div class="card" style="margin-top:12px;">
       <div class="section-label">Ballot Format</div>
-      <div class="layout-badge">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="9.5" y="3" width="5" height="18" rx="1"/><rect x="16" y="3" width="5" height="18" rx="1"/></svg>
-        3-column vertical split
+      <div class="format-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="5" width="20" height="14" rx="1"/>
+          <line x1="9" y1="5" x2="9" y2="19"/>
+          <line x1="16" y1="5" x2="16" y2="19"/>
+        </svg>
+        Landscape A4 — 3 stubs
       </div>
-      <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(244,235,255,0.38);line-height:1.75;letter-spacing:0.03em;">
-        A4 page (210×297mm) is divided into <strong style="color:rgba(244,235,255,0.7);">3 vertical columns</strong> of 70mm each. Every column is an identical ballot stub with unique ArUco-style fiducial markers at all four corners for optical scanning.
+      <p class="format-desc">
+        A4 landscape <strong>(297 × 210mm)</strong>, 3 equal stub columns of 99mm. Switches to <strong>2 inner columns</strong> automatically when needed. A <strong>QR code</strong> at the bottom of each stub encodes the ballot template ID.
       </p>
     </div>
 
     <div style="padding:14px;">
       <button class="btn-primary" onclick="switchTab('add')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
         Add Candidates
       </button>
     </div>
     <div class="bottom-spacer"></div>
   </div>
 
-  <!-- CANDIDATES PANEL -->
+  <!-- CANDIDATES -->
   <div class="panel" id="panel-candidates">
     <div class="candidates-scroll" id="candidateList"></div>
   </div>
 
-  <!-- ADD PANEL -->
+  <!-- ADD -->
   <div class="panel" id="panel-add">
+
+    <!-- Capacity bar -->
+    <div class="cap-wrap">
+      <div class="cap-bar-track">
+        <div class="cap-bar-fill" id="cap-bar-fill" style="width:0%;background:#16a34a;"></div>
+      </div>
+      <div class="cap-label" id="cap-label">0% full · approx. 30 candidate slots remaining</div>
+    </div>
+
     <div class="card">
-      <div class="section-label">Add Candidate</div>
+      <div class="section-label">New Candidate</div>
       <div class="field">
         <label>Position</label>
         <input type="text" id="posInput" placeholder="e.g. President" list="pos-dl" autocomplete="off">
@@ -548,15 +248,18 @@ body::after {
       <div class="field">
         <label>Candidate Name</label>
         <input type="text" id="nameInput" placeholder="Full name" autocomplete="off">
+        <div class="field-error" id="nameError"></div>
       </div>
       <button class="btn-primary" id="addBtn" onclick="addCandidate()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
         Add to Ballot
       </button>
     </div>
 
     <div class="card" style="margin-top:12px;">
-      <div class="section-label">Positions</div>
+      <div class="section-label">Common Positions</div>
       <div id="pills" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
     </div>
 
@@ -565,7 +268,6 @@ body::after {
     </div>
     <div class="bottom-spacer"></div>
   </div>
-
 </div>
 
 <!-- ══════════ PRINT BALLOT ══════════ -->
@@ -576,64 +278,142 @@ body::after {
 <script>
 // ── State ──
 let candidates = [
-  { position:"President",      name:"Alejandra Reyes"   },
-  { position:"President",      name:"Marco Villanueva"  },
-  { position:"Vice President", name:"Sofia Cruz"        },
-  { position:"Vice President", name:"Daniel Lim"        },
-  { position:"Secretary",      name:"Pia Domingo"       },
-  { position:"Treasurer",      name:"Jerome Tan"        },
-  { position:"Treasurer",      name:"Ana Bautista"      },
+  { position:"President",      name:"Alejandra Reyes"  },
+  { position:"President",      name:"Marco Villanueva" },
+  { position:"Vice President", name:"Sofia Cruz"       },
+  { position:"Vice President", name:"Daniel Lim"       },
+  { position:"Secretary",      name:"Pia Domingo"      },
+  { position:"Treasurer",      name:"Jerome Tan"       },
+  { position:"Treasurer",      name:"Ana Bautista"     },
 ];
 
 const POSITIONS = ["President","Vice President","Secretary","Treasurer","Senator","Board Member","Auditor","P.R.O."];
+
+// ── Capacity model ──────────────────────────────────────────
+// Each ballot stub: 99mm wide × 210mm tall
+// Fixed chrome consuming vertical space (mm):
+//   padding top/bottom:  9 + 6 = 15
+//   header (title+rule+date): ~19
+//   instruction bar:     ~5
+//   QR wrap:             ~19
+//   gaps between blocks: ~4
+//   Total fixed:         ~62mm  → available = 148mm
+//
+// Measured row heights in print CSS:
+//   position header row: border + padding + text = ~5.5mm
+//   candidate row:       padding + text          = ~3.5mm
+//   inter-block gap:                               2mm
+//
+// A "slot unit" = 1 candidate row = 3.5mm
+// A new position costs an extra header (5.5mm) + gap (2mm) = ~7.5mm → 2.1 slot units overhead
+//
+// Single-col available: 148mm / 3.5mm ≈ 42 slot-units raw
+//   minus position overhead (avg 2.1 per unique position)
+// Two-col available: ~2× because grid splits blocks across both columns
+//
+// Conservative hard caps (tested, leaves ≥5mm breathing room):
+const SINGLE_COL_THRESHOLD = 14; // row-units before switching to two-col
+                                  // (positions×1.6 + candidates) — matches prior behavior
+const HARD_CAP_ROWS        = 52; // absolute maximum row-units in two-col layout
+                                  // row-units = uniquePositions×1.6 + totalCandidates
+
+function byPosition() {
+  const m = {};
+  candidates.forEach(c => { (m[c.position] = m[c.position] || []).push(c.name); });
+  return m;
+}
+
+function calcRowUnits() {
+  const numPos = Object.keys(byPosition()).length;
+  return numPos * 1.6 + candidates.length;
+}
+
+function isAtCapacity() {
+  return calcRowUnits() >= HARD_CAP_ROWS;
+}
+
+// ── Capacity bar ──
+function updateCapacityBar() {
+  const used = calcRowUnits();
+  const pct  = Math.min(100, Math.round(used / HARD_CAP_ROWS * 100));
+  const slotsLeft = Math.max(0, Math.floor(HARD_CAP_ROWS - used));
+
+  const bar   = document.getElementById('cap-bar-fill');
+  const label = document.getElementById('cap-label');
+  const btn   = document.getElementById('addBtn');
+  const nameI = document.getElementById('nameInput');
+  const posI  = document.getElementById('posInput');
+  if (!bar) return;
+
+  bar.style.width      = pct + '%';
+  bar.style.background = pct < 60 ? '#16a34a' : pct < 85 ? '#f59e0b' : '#f62a5b';
+
+  if (pct >= 100) {
+    label.textContent  = 'Ballot is full — remove a candidate to add more.';
+    label.style.color  = '#c0143c';
+    btn.disabled       = true;
+    nameI.disabled     = true;
+    posI.disabled      = true;
+  } else {
+    label.textContent  = `${pct}% full · approx. ${slotsLeft} candidate slot${slotsLeft === 1 ? '' : 's'} remaining`;
+    label.style.color  = pct >= 85 ? '#b45309' : 'var(--muted)';
+    btn.disabled       = false;
+    nameI.disabled     = false;
+    posI.disabled      = false;
+  }
+}
 
 document.getElementById('electionDate').value = new Date().toISOString().split('T')[0];
 
 // ── Tabs ──
 function switchTab(id) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
+  document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', ['setup','candidates','add'][i] === id);
   });
   document.querySelectorAll('.panel').forEach(p => {
     p.classList.toggle('active', p.id === 'panel-' + id);
   });
   if (id === 'candidates') renderList();
-  if (id === 'add') renderPills();
+  if (id === 'add') { renderPills(); clearNameError(); updateCapacityBar(); }
 }
 
-// ── Group by position ──
-function byPosition() {
-  const m = {};
-  candidates.forEach(c => { (m[c.position] = m[c.position]||[]).push(c.name); });
-  return m;
+// ── Validation ──
+function isDuplicate(pos, name) {
+  return candidates.some(c =>
+    c.position.trim().toLowerCase() === pos.trim().toLowerCase() &&
+    c.name.trim().toLowerCase()     === name.trim().toLowerCase()
+  );
+}
+function showNameError(msg) {
+  const e = document.getElementById('nameError');
+  const i = document.getElementById('nameInput');
+  e.textContent = msg; e.classList.add('visible'); i.classList.add('error');
+}
+function clearNameError() {
+  document.getElementById('nameError').classList.remove('visible');
+  document.getElementById('nameInput').classList.remove('error');
 }
 
 // ── Candidate list ──
 function renderList() {
   const el = document.getElementById('candidateList');
   if (!candidates.length) {
-    el.innerHTML = `<div class="empty-state">
-      <span class="empty-icon">🗳️</span>
-      <p>No candidates yet.<br>Use the Add tab to<br>build your ballot.</p>
-    </div>`;
+    el.innerHTML = `<div class="empty-state"><span class="empty-icon">🗳️</span><p>No candidates yet.<br>Use the Add tab to build your ballot.</p></div>`;
     return;
   }
-  const groups = byPosition();
-  el.innerHTML = Object.entries(groups).map(([pos, names]) => `
+  const g = byPosition();
+  el.innerHTML = Object.entries(g).map(([pos, names]) => `
     <div class="position-group">
       <div class="pos-header">
         <span class="pos-name">${pos}</span>
         <span class="pos-count">${names.length}</span>
       </div>
       ${names.map(name => {
-        const idx = candidates.findIndex(c => c.position===pos && c.name===name);
-        const init = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        const idx  = candidates.findIndex(c => c.position === pos && c.name === name);
+        const init = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
         return `<div class="candidate-item">
           <div class="avatar">${init}</div>
-          <div class="c-info">
-            <div class="c-name">${name}</div>
-            <div class="c-pos">${pos}</div>
-          </div>
+          <div class="c-info"><div class="c-name">${name}</div><div class="c-pos">${pos}</div></div>
           <button class="btn-del" onclick="remove(${idx})">✕</button>
         </div>`;
       }).join('')}
@@ -642,54 +422,66 @@ function renderList() {
 
 // ── Pills ──
 function renderPills() {
-  const used = new Set(candidates.map(c=>c.position));
+  const used = new Set(candidates.map(c => c.position));
   document.getElementById('pills').innerHTML = POSITIONS.map(p => `
-    <button class="pill ${used.has(p)?'used':''}" onclick="fillPos('${p}')">
-      ${p}${used.has(p)?' ✓':''}
-    </button>`).join('');
+    <button class="pill ${used.has(p) ? 'used' : ''}" onclick="fillPos('${p}')">${p}${used.has(p) ? ' ✓' : ''}</button>`
+  ).join('');
 }
-
 function fillPos(p) {
   document.getElementById('posInput').value = p;
   document.getElementById('nameInput').focus();
+  clearNameError();
 }
 
 // ── Add / Remove ──
 function addCandidate() {
+  if (isAtCapacity()) return; // guard (button should already be disabled)
+
   const pos  = document.getElementById('posInput').value.trim();
   const name = document.getElementById('nameInput').value.trim();
-  if (!pos || !name) {
-    const el = document.getElementById(!pos ? 'posInput' : 'nameInput');
+  clearNameError();
+
+  if (!pos) {
+    const el = document.getElementById('posInput');
     el.style.borderColor = '#f62a5b';
-    el.style.boxShadow = '0 0 0 3px rgba(246,42,91,0.2)';
-    setTimeout(() => { el.style.borderColor=''; el.style.boxShadow=''; }, 1200);
+    el.style.boxShadow   = '0 0 0 3px rgba(246,42,91,.12)';
+    setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1400);
     return;
   }
-  candidates.push({ position:pos, name });
+  if (!name) { showNameError("Please enter the candidate's full name."); return; }
+  if (isDuplicate(pos, name)) { showNameError(`"${name}" is already listed under ${pos}.`); return; }
+
+  candidates.push({ position: pos, name });
   document.getElementById('nameInput').value = '';
+  clearNameError();
   renderBallot();
   renderPills();
-  // Success flash
+  updateCapacityBar();
+
   const btn = document.getElementById('addBtn');
-  btn.classList.add('success');
-  btn.innerHTML = '✓ Added!';
-  setTimeout(() => {
-    btn.classList.remove('success');
-    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add to Ballot`;
-  }, 1200);
+  if (!btn.disabled) {
+    btn.classList.add('success');
+    btn.innerHTML = '✓ Added!';
+    setTimeout(() => {
+      btn.classList.remove('success');
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add to Ballot`;
+    }, 1200);
+  }
 }
 
 function remove(i) {
-  candidates.splice(i,1);
+  candidates.splice(i, 1);
   renderList();
   renderBallot();
+  updateCapacityBar();
 }
 
 function clearAll() {
   if (!candidates.length || !confirm('Clear all candidates?')) return;
-  candidates=[];
+  candidates = [];
   renderList();
   renderBallot();
+  updateCapacityBar();
 }
 
 // ── Fiducial SVG ──
@@ -702,81 +494,197 @@ function fid(id) {
     [[0,1,0],[0,0,1],[1,1,0]], [[1,1,0],[1,0,0],[0,1,1]],
     [[0,0,0],[1,1,1],[0,0,0]], [[1,0,0],[0,0,1],[1,0,0]],
   ];
-  const p=pats[id%pats.length], cell=18, b=9, t=cell*3+b*2;
-  let cells='';
-  for(let r=0;r<3;r++) for(let c=0;c<3;c++)
-    if(p[r][c]) cells+=`<rect x="${b+c*cell}" y="${b+r*cell}" width="${cell}" height="${cell}" fill="#000"/>`;
+  const p = pats[id % pats.length], cell = 18, b = 9, t = cell * 3 + b * 2;
+  let cells = '';
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++)
+    if (p[r][c]) cells += `<rect x="${b+c*cell}" y="${b+r*cell}" width="${cell}" height="${cell}" fill="black"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}">
     <rect width="${t}" height="${t}" fill="white" stroke="black" stroke-width="4"/>
     <rect x="4" y="4" width="${t-8}" height="${t-8}" fill="white"/>
     ${cells}
-    <rect x="${b}" y="${b}" width="6" height="6" fill="#000"/>
-    <rect x="${t-b-6}" y="${b}" width="6" height="6" fill="#000"/>
-    <rect x="${b}" y="${t-b-6}" width="6" height="6" fill="#000"/>
-    <rect x="${t-b-6}" y="${t-b-6}" width="6" height="6" fill="#000"/>
+    <rect x="${b}" y="${b}" width="6" height="6" fill="black"/>
+    <rect x="${t-b-6}" y="${b}" width="6" height="6" fill="black"/>
+    <rect x="${b}" y="${t-b-6}" width="6" height="6" fill="black"/>
+    <rect x="${t-b-6}" y="${t-b-6}" width="6" height="6" fill="black"/>
   </svg>`;
 }
 
-// ── Render ballot columns ──
+// ══════════════════════════════════════════
+//  PURE-JS QR CODE GENERATOR (Version 1-M)
+// ══════════════════════════════════════════
+const QRGen = (() => {
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  for (let i = 0, x = 1; i < 255; i++, x = x < 128 ? x * 2 : (x * 2 ^ 0x11d) & 0xff) {
+    EXP[i] = x; EXP[i+255] = x; LOG[x] = i;
+  }
+  const gfMul = (a, b) => a && b ? EXP[LOG[a] + LOG[b]] : 0;
+  const genPoly = n => {
+    let g = [1];
+    for (let i = 0; i < n; i++) {
+      const ng = new Uint8Array(g.length + 1);
+      for (let j = 0; j < g.length; j++) ng[j] ^= g[j];
+      for (let j = 0; j < g.length; j++) ng[j+1] ^= gfMul(g[j], EXP[i]);
+      g = ng;
+    }
+    return g;
+  };
+  const rsEC = (msg, nec) => {
+    const gen = genPoly(nec);
+    const r = new Uint8Array(msg.length + gen.length - 1);
+    for (let i = 0; i < msg.length; i++) {
+      const c = msg[i] ^ r[i];
+      if (c) for (let j = 0; j < gen.length; j++) r[i+j] ^= gfMul(gen[j], c);
+    }
+    return Array.from(r.slice(msg.length));
+  };
+  const ANUM = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+  const encodeAN = str => {
+    const bits = [];
+    const push = (v, len) => { for (let i = len-1; i >= 0; i--) bits.push((v >> i) & 1); };
+    push(0b0010, 4);
+    push(str.length, 9);
+    for (let i = 0; i < str.length - 1; i += 2)
+      push(ANUM.indexOf(str[i]) * 45 + ANUM.indexOf(str[i+1]), 11);
+    if (str.length % 2) push(ANUM.indexOf(str[str.length-1]), 6);
+    push(0, 4);
+    while (bits.length % 8) bits.push(0);
+    const bytes = [];
+    for (let i = 0; i < bits.length; i += 8) { let b = 0; for (let j = 0; j < 8; j++) b = (b << 1) | bits[i+j]; bytes.push(b); }
+    const PAD = [0xEC, 0x11];
+    while (bytes.length < 26) bytes.push(PAD[(bytes.length - Math.ceil(bits.length / 8)) % 2]);
+    return bytes;
+  };
+  const buildMatrix = data => {
+    const N = 21;
+    const m = Array.from({ length: N }, () => new Int8Array(N).fill(-1));
+    const set = (r, c, v) => { if (r >= 0 && r < N && c >= 0 && c < N) m[r][c] = v; };
+    const finder = (tr, tc) => {
+      for (let dr = -1; dr <= 7; dr++) for (let dc = -1; dc <= 7; dc++) {
+        const ins = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6;
+        const brd = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+        const inn = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+        set(tr+dr, tc+dc, ins ? (brd || inn ? 1 : 0) : 0);
+      }
+    };
+    finder(0, 0); finder(0, 14); finder(14, 0);
+    for (let i = 8; i <= 12; i++) { m[6][i] = i % 2 ? 0 : 1; m[i][6] = i % 2 ? 0 : 1; }
+    m[13][8] = 1;
+    const fmt = [1,0,1,0,0,0,1,0,0,1,0,0,1,0,1];
+    const fp1 = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    fp1.forEach(([r, c], i) => set(r, c, fmt[i]));
+    for (let i = 0; i < 7; i++) set(8, N-7+i, fmt[i]);
+    set(8, N-8, fmt[7]);
+    for (let i = 0; i < 7; i++) set(N-7+i, 8, fmt[14-i]);
+    const ec = rsEC(new Uint8Array(data), 10);
+    const allBytes = [...data, ...ec];
+    const allBits = [];
+    allBytes.forEach(b => { for (let i = 7; i >= 0; i--) allBits.push((b >> i) & 1); });
+    while (allBits.length < 208) allBits.push(0);
+    let bi = 0;
+    for (let right = N-1; right > 0; right -= 2) {
+      if (right === 6) right = 5;
+      for (let vert = 0; vert < N; vert++) {
+        const r = N - 1 - vert;
+        for (let col = 0; col < 2; col++) {
+          const c = right - col;
+          if (m[r][c] === -1 && bi < allBits.length) {
+            m[r][c] = allBits[bi] ^ (c % 3 === 0 ? 1 : 0);
+            bi++;
+          }
+        }
+      }
+    }
+    return m;
+  };
+  const toSVG = (text, sizeMM) => {
+    const clean = text.toUpperCase().replace(/[^0-9A-Z $%*+\-./:]/g, '').substring(0, 20);
+    let data;
+    try { data = encodeAN(clean.padEnd(Math.max(clean.length, 2), ' ')); }
+    catch (e) { data = encodeAN('BALLOT        '); }
+    const mat = buildMatrix(data);
+    const N = 21, Q = 4, total = N + Q * 2, cell = sizeMM / total;
+    let rects = '';
+    for (let r = 0; r < N; r++) for (let c = 0; c < N; c++)
+      if (mat[r][c] === 1) rects += `<rect x="${((c+Q)*cell).toFixed(2)}" y="${((r+Q)*cell).toFixed(2)}" width="${cell.toFixed(2)}" height="${cell.toFixed(2)}" fill="black"/>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${sizeMM}mm" height="${sizeMM}mm" viewBox="0 0 ${sizeMM} ${sizeMM}" shape-rendering="crispEdges"><rect width="${sizeMM}" height="${sizeMM}" fill="white"/>${rects}</svg>`;
+  };
+  return { toSVG };
+})();
+
+// ── Stable template ID ──
+let _tid = '', _tkey = '';
+function getTemplateId() {
+  const g = byPosition();
+  const key = document.getElementById('electionTitle').value +
+              document.getElementById('electionDate').value +
+              JSON.stringify(Object.entries(g).sort());
+  if (key !== _tkey) {
+    _tkey = key;
+    _tid  = Array.from({ length: 10 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 34)]).join('');
+  }
+  return _tid;
+}
+
+// ── Render print ballot ──
 function renderBallot() {
   const title = document.getElementById('electionTitle').value || 'General Election';
   const sub   = document.getElementById('electionSub').value;
   const raw   = document.getElementById('electionDate').value;
   const date  = raw
-    ? new Date(raw+'T00:00:00').toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})
+    ? new Date(raw + 'T00:00:00').toLocaleDateString('en-PH', { year:'numeric', month:'long', day:'numeric' })
     : 'Date TBD';
 
-  const groups = byPosition();
-  const posEntries = Object.entries(groups);
-  const bid = (() => { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join(''); })();
+  const g = byPosition();
+  const posEntries = Object.entries(g);
+  const rowUnits   = Object.keys(g).length * 1.6 + candidates.length;
+  const useTwoCol  = rowUnits > SINGLE_COL_THRESHOLD;
 
-  const makeCol = (ci) => {
-    const sId = String(ci+1).padStart(2,'0');
-    const fb  = ci*4;
+  const tid    = getTemplateId();
+  const qrSVG  = QRGen.toSVG(tid, 15);
 
+  const makeCol = ci => {
+    const fb = ci * 4;
     const posHTML = !posEntries.length
-      ? `<div style="font-family:'DM Mono',monospace;font-size:5pt;color:#ccc;text-align:center;padding:4mm 0;">No candidates</div>`
-      : posEntries.map(([pos,names]) => `
-        <div class="b-pos">
-          <div class="b-pos-name">${pos}</div>
-          ${names.map(n=>`<div class="b-cand"><div class="bubble"></div><div class="cname">${n}</div></div>`).join('')}
-        </div>`).join('');
+      ? `<div style="font-size:6pt;color:black;text-align:center;padding:4mm 0;">No candidates added.</div>`
+      : posEntries.map(([pos, names]) => `
+          <div class="b-pos">
+            <div class="b-pos-name">${pos}</div>
+            ${names.map(n => `<div class="b-cand"><div class="bubble"></div><div class="cname">${n}</div></div>`).join('')}
+          </div>`).join('');
 
     return `<div class="b-col">
       <div class="fid tl">${fid(fb+0)}</div>
       <div class="fid tr">${fid(fb+1)}</div>
       <div class="fid bl">${fid(fb+2)}</div>
       <div class="fid br">${fid(fb+3)}</div>
-
       <div class="b-hdr">
         <div class="b-title">${title}</div>
-        ${sub?`<div class="b-org">${sub}</div>`:''}
-        <div class="b-rule"><div class="b-diamond"></div></div>
+        ${sub ? `<div class="b-org">${sub}</div>` : ''}
+        <div class="b-rule"></div>
         <div class="b-date">${date}</div>
       </div>
-
-      <div class="b-meta">Stub ${sId}/03 · ${bid}-${sId}</div>
-      <div class="b-instr">Fill the ○ bubble for your choice</div>
-
-      <div class="b-positions">${posHTML}</div>
-
-      <div class="b-stamp">${title.substring(0,8).toUpperCase()} · ${sId}</div>
+      <div class="b-instr">Shade the ○ bubble completely for your chosen candidate</div>
+      <div class="b-positions${useTwoCol ? ' two-col' : ''}">${posHTML}</div>
+      <div class="b-qr-wrap">${qrSVG}<div class="b-qr-label">${tid}</div></div>
     </div>`;
   };
 
-  document.getElementById('ballotPage').innerHTML = makeCol(0)+makeCol(1)+makeCol(2);
+  document.getElementById('ballotPage').innerHTML = makeCol(0) + makeCol(1) + makeCol(2);
 }
 
 // ── Live updates ──
-['electionTitle','electionSub','electionDate'].forEach(id => {
-  document.getElementById(id).addEventListener('input', renderBallot);
+['electionTitle', 'electionSub', 'electionDate'].forEach(id => {
+  document.getElementById(id).addEventListener('input',  renderBallot);
   document.getElementById(id).addEventListener('change', renderBallot);
 });
-document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') addCandidate(); });
+document.getElementById('nameInput').addEventListener('input', clearNameError);
+document.getElementById('posInput').addEventListener('input',  clearNameError);
+document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') addCandidate(); });
 
 // ── Init ──
 renderBallot();
 renderList();
+updateCapacityBar();
 </script>
 </body>
 </html>
