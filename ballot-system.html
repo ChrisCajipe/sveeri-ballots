@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ballot Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --crimson: #f62a5b;
+  --lavender: #f4ebff;
+  --navy: #0a1039;
+  --navy-mid: #111a52;
+  --navy-light: #1c2a6b;
+  --border: rgba(244,235,255,0.13);
+  --muted: rgba(244,235,255,0.4);
+}
+
+html, body {
+  height: 100%;
+  background: var(--navy);
+  color: var(--lavender);
+  font-family: 'Syne', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Subtle noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  background-size: 256px;
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ── MOBILE SHELL ── */
+.app {
+  max-width: 430px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Accent glow top */
+.app::before {
+  content: '';
+  position: fixed;
+  top: -80px; left: 50%;
+  transform: translateX(-50%);
+  width: 300px; height: 200px;
+  background: radial-gradient(ellipse, rgba(246,42,91,0.18) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── TOP NAV ── */
+.topnav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(10,16,57,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.brand {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.brand-mark {
+  width: 30px; height: 30px;
+  background: var(--crimson);
+  border-radius: 7px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  padding: 6px;
+  flex-shrink: 0;
+}
+
+.brand-mark span {
+  background: rgba(255,255,255,0.9);
+  border-radius: 1px;
+}
+
+.brand-mark span:nth-child(2) { opacity: 0.55; }
+.brand-mark span:nth-child(3) { opacity: 0.55; }
+.brand-mark span:nth-child(4) { opacity: 0.25; }
+
+.brand-text {
+  font-size: 14px; font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--lavender);
+}
+
+.brand-text em {
+  font-style: normal;
+  color: var(--crimson);
+}
+
+.print-btn {
+  background: var(--crimson);
+  color: white; border: none;
+  border-radius: 8px;
+  padding: 9px 15px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: transform 0.15s, background 0.15s;
+}
+.print-btn:active { transform: scale(0.95); background: #d41f4a; }
+
+/* ── TABS ── */
+.tabs {
+  position: relative; z-index: 1;
+  display: flex;
+  background: var(--navy-mid);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.tab {
+  flex: 1; padding: 12px 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none; border: none;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.2s;
+}
+
+.tab.active { color: var(--lavender); }
+
+.tab.active::after {
+  content: '';
+  position: absolute; bottom: 0; left: 15%; right: 15%;
+  height: 2px;
+  background: var(--crimson);
+  border-radius: 2px 2px 0 0;
+}
+
+/* ── PANELS ── */
+.panel { display: none; flex: 1; flex-direction: column; position: relative; z-index: 1; }
+.panel.active { display: flex; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--navy-mid);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 18px;
+  margin: 14px 14px 0;
+}
+
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 8.5px; letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 14px;
+}
+
+/* ── FIELDS ── */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+
+.field label {
+  display: block;
+  font-family: 'DM Mono', monospace;
+  font-size: 8.5px; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(244,235,255,0.45);
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  background: rgba(10,16,57,0.6);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--lavender);
+  padding: 12px 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 15px; font-weight: 400;
+  outline: none;
+  -webkit-appearance: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus {
+  border-color: rgba(246,42,91,0.6);
+  box-shadow: 0 0 0 3px rgba(246,42,91,0.12);
+}
+
+.field input::placeholder { color: rgba(244,235,255,0.18); }
+
+/* ── BUTTONS ── */
+.btn-primary {
+  width: 100%;
+  background: var(--crimson);
+  color: white; border: none;
+  border-radius: 12px;
+  padding: 15px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform 0.15s, background 0.15s;
+}
+.btn-primary:active { transform: scale(0.98); background: #d41f4a; }
+.btn-primary.success { background: #16a34a !important; }
+
+.btn-ghost {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(246,42,91,0.25);
+  color: rgba(246,42,91,0.65);
+  border-radius: 10px; padding: 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:active { border-color: rgba(246,42,91,0.5); color: var(--crimson); }
+
+/* ── LAYOUT CARD BADGE ── */
+.layout-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(246,42,91,0.1);
+  border: 1px solid rgba(246,42,91,0.2);
+  border-radius: 8px; padding: 7px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px; color: var(--crimson);
+  letter-spacing: 0.06em; margin-bottom: 10px;
+}
+
+/* ── CANDIDATE LIST ── */
+.candidates-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 0 14px 40px;
+}
+.candidates-scroll::-webkit-scrollbar { display: none; }
+
+.position-group { margin-top: 18px; }
+
+.pos-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pos-name {
+  font-family: 'DM Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--crimson);
+}
+
+.pos-count {
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  color: rgba(244,235,255,0.3);
+  background: rgba(244,235,255,0.05);
+  border: 1px solid var(--border);
+  padding: 2px 9px; border-radius: 99px;
+}
+
+.candidate-item {
+  background: var(--navy-mid);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 13px 14px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 7px;
+  animation: fadeUp 0.2s ease;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--navy-light) 0%, rgba(246,42,91,0.7) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+  letter-spacing: 0.05em;
+}
+
+.c-info { flex: 1; min-width: 0; }
+.c-name { font-size: 14px; font-weight: 600; color: var(--lavender); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.c-pos  { font-family: 'DM Mono', monospace; font-size: 9px; color: rgba(244,235,255,0.38); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 2px; }
+
+.btn-del {
+  background: rgba(246,42,91,0.08);
+  border: 1px solid rgba(246,42,91,0.18);
+  border-radius: 8px;
+  width: 30px; height: 30px; color: var(--crimson);
+  font-size: 13px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: background 0.15s;
+}
+.btn-del:active { background: rgba(246,42,91,0.22); }
+
+.empty-state {
+  text-align: center; padding: 52px 24px;
+  color: rgba(244,235,255,0.22);
+}
+.empty-icon { font-size: 44px; display: block; margin-bottom: 14px; }
+.empty-state p { font-family: 'DM Mono', monospace; font-size: 10.5px; letter-spacing: 0.06em; line-height: 1.8; }
+
+/* ── SUGGESTION PILLS ── */
+.pill {
+  background: rgba(244,235,255,0.06);
+  border: 1px solid var(--border);
+  color: rgba(244,235,255,0.55);
+  border-radius: 99px; padding: 7px 14px;
+  font-family: 'DM Mono', monospace; font-size: 10px;
+  letter-spacing: 0.06em; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.pill:active { background: rgba(244,235,255,0.12); }
+.pill.used {
+  background: rgba(246,42,91,0.1);
+  border-color: rgba(246,42,91,0.3);
+  color: var(--crimson);
+}
+
+/* ── SPACER ── */
+.bottom-spacer { height: 36px; }
+
+/* ═══════════════════════════════════════════════════
+   PRINT — A4 split VERTICALLY (3 columns × 70mm)
+═══════════════════════════════════════════════════ */
+.print-only { display: none; }
+
+@media print {
+  .app { display: none !important; }
+
+  .print-only {
+    display: block !important;
+  }
+
+  @page { size: A4 portrait; margin: 0; }
+
+  body {
+    background: white !important;
+    color: #0a1039;
+  }
+
+  body::after { display: none; }
+
+  .ballot-page {
+    width: 210mm; height: 297mm;
+    display: flex; flex-direction: row;
+    overflow: hidden;
+  }
+
+  /* Each column = 70mm wide × 297mm tall */
+  .b-col {
+    width: 70mm; height: 297mm;
+    border-right: 1.5px dashed #c8c0dc;
+    position: relative;
+    display: flex; flex-direction: column;
+    padding: 12mm 5.5mm 12mm;
+    overflow: hidden;
+  }
+  .b-col:last-child { border-right: none; }
+
+  /* Fiducials */
+  .fid { position: absolute; width: 10mm; height: 10mm; }
+  .fid svg { width: 100%; height: 100%; }
+  .fid.tl { top: 3mm; left: 3mm; }
+  .fid.tr { top: 3mm; right: 3mm; }
+  .fid.bl { bottom: 3mm; left: 3mm; }
+  .fid.br { bottom: 3mm; right: 3mm; }
+
+  /* Header */
+  .b-hdr { text-align: center; padding: 0 13mm; margin-bottom: 3.5mm; }
+
+  .b-title {
+    font-family: 'Fraunces', serif;
+    font-size: 10pt; font-weight: 600;
+    color: #0a1039; letter-spacing: 0.07em;
+    text-transform: uppercase; line-height: 1.25;
+  }
+
+  .b-org {
+    font-family: 'DM Mono', monospace;
+    font-size: 5.5pt; color: #555;
+    letter-spacing: 0.1em; margin-top: 1mm;
+    text-transform: uppercase;
+  }
+
+  .b-rule { display: flex; align-items: center; gap: 2.5mm; margin: 2.5mm 0; }
+  .b-rule::before, .b-rule::after { content: ''; flex: 1; height: 1px; background: #0a1039; }
+  .b-diamond { width: 2.5mm; height: 2.5mm; background: #f62a5b; transform: rotate(45deg); flex-shrink: 0; }
+
+  .b-date {
+    font-family: 'DM Mono', monospace;
+    font-size: 5.5pt; color: #888;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+
+  .b-meta {
+    font-family: 'DM Mono', monospace; font-size: 4.8pt; color: #aaa;
+    text-align: center; margin-bottom: 2.5mm;
+  }
+
+  .b-instr {
+    font-family: 'DM Mono', monospace; font-size: 4.5pt; color: #999;
+    text-align: center; letter-spacing: 0.05em;
+    border-top: 0.5px solid #ddd; border-bottom: 0.5px solid #ddd;
+    padding: 1.5mm 0; margin-bottom: 3mm;
+  }
+
+  /* Position blocks */
+  .b-positions { flex: 1; display: flex; flex-direction: column; gap: 3mm; overflow: hidden; }
+
+  .b-pos {
+    border: 0.75px solid #d8d0ec;
+    border-radius: 1.5mm; padding: 2mm 2.5mm;
+    background: #faf8fd;
+  }
+
+  .b-pos-name {
+    font-family: 'DM Mono', monospace; font-size: 5.5pt;
+    color: #f62a5b; text-transform: uppercase; letter-spacing: 0.1em;
+    border-bottom: 0.5px solid #e0d8ee;
+    padding-bottom: 1mm; margin-bottom: 1.5mm;
+  }
+
+  .b-cand { display: flex; align-items: center; gap: 2mm; padding: 1mm 0; border-bottom: 0.5px solid #ece8f5; }
+  .b-cand:last-child { border-bottom: none; }
+
+  .bubble { width: 4.5mm; height: 4.5mm; border: 1.25px solid #0a1039; border-radius: 50%; background: white; flex-shrink: 0; }
+
+  .cname { font-family: 'Fraunces', serif; font-size: 7pt; font-weight: 300; color: #0a1039; line-height: 1.2; }
+
+  /* Vertical stamp */
+  .b-stamp {
+    position: absolute; bottom: 14mm; left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+    font-family: 'DM Mono', monospace; font-size: 4.5pt;
+    color: #ccc; letter-spacing: 0.1em; text-transform: uppercase;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ MOBILE APP ══════════ -->
+<div class="app">
+
+  <div class="topnav">
+    <div class="brand">
+      <div class="brand-mark">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <div class="brand-text">BALLOT<em>.</em></div>
+    </div>
+    <button class="print-btn" onclick="window.print()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Print
+    </button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('setup')">Setup</button>
+    <button class="tab" onclick="switchTab('candidates')">Candidates</button>
+    <button class="tab" onclick="switchTab('add')">+ Add</button>
+  </div>
+
+  <!-- SETUP PANEL -->
+  <div class="panel active" id="panel-setup">
+    <div class="card">
+      <div class="section-label">Election Info</div>
+      <div class="field">
+        <label>Election Title</label>
+        <input type="text" id="electionTitle" value="General Election 2025" placeholder="e.g. Student Council 2025">
+      </div>
+      <div class="field">
+        <label>Organization / Subtitle</label>
+        <input type="text" id="electionSub" placeholder="e.g. Westbrook University">
+      </div>
+      <div class="field">
+        <label>Election Date</label>
+        <input type="date" id="electionDate">
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="section-label">Ballot Format</div>
+      <div class="layout-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="9.5" y="3" width="5" height="18" rx="1"/><rect x="16" y="3" width="5" height="18" rx="1"/></svg>
+        3-column vertical split
+      </div>
+      <p style="font-family:'DM Mono',monospace;font-size:10px;color:rgba(244,235,255,0.38);line-height:1.75;letter-spacing:0.03em;">
+        A4 page (210×297mm) is divided into <strong style="color:rgba(244,235,255,0.7);">3 vertical columns</strong> of 70mm each. Every column is an identical ballot stub with unique ArUco-style fiducial markers at all four corners for optical scanning.
+      </p>
+    </div>
+
+    <div style="padding:14px;">
+      <button class="btn-primary" onclick="switchTab('add')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Candidates
+      </button>
+    </div>
+    <div class="bottom-spacer"></div>
+  </div>
+
+  <!-- CANDIDATES PANEL -->
+  <div class="panel" id="panel-candidates">
+    <div class="candidates-scroll" id="candidateList"></div>
+  </div>
+
+  <!-- ADD PANEL -->
+  <div class="panel" id="panel-add">
+    <div class="card">
+      <div class="section-label">Add Candidate</div>
+      <div class="field">
+        <label>Position</label>
+        <input type="text" id="posInput" placeholder="e.g. President" list="pos-dl" autocomplete="off">
+        <datalist id="pos-dl">
+          <option value="President"><option value="Vice President">
+          <option value="Secretary"><option value="Treasurer">
+          <option value="Senator"><option value="Board Member">
+          <option value="Auditor"><option value="P.R.O.">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Candidate Name</label>
+        <input type="text" id="nameInput" placeholder="Full name" autocomplete="off">
+      </div>
+      <button class="btn-primary" id="addBtn" onclick="addCandidate()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add to Ballot
+      </button>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="section-label">Positions</div>
+      <div id="pills" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+    </div>
+
+    <div style="padding:14px;">
+      <button class="btn-ghost" onclick="clearAll()">Clear All Candidates</button>
+    </div>
+    <div class="bottom-spacer"></div>
+  </div>
+
+</div>
+
+<!-- ══════════ PRINT BALLOT ══════════ -->
+<div class="print-only">
+  <div class="ballot-page" id="ballotPage"></div>
+</div>
+
+<script>
+// ── State ──
+let candidates = [
+  { position:"President",      name:"Alejandra Reyes"   },
+  { position:"President",      name:"Marco Villanueva"  },
+  { position:"Vice President", name:"Sofia Cruz"        },
+  { position:"Vice President", name:"Daniel Lim"        },
+  { position:"Secretary",      name:"Pia Domingo"       },
+  { position:"Treasurer",      name:"Jerome Tan"        },
+  { position:"Treasurer",      name:"Ana Bautista"      },
+];
+
+const POSITIONS = ["President","Vice President","Secretary","Treasurer","Senator","Board Member","Auditor","P.R.O."];
+
+document.getElementById('electionDate').value = new Date().toISOString().split('T')[0];
+
+// ── Tabs ──
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['setup','candidates','add'][i] === id);
+  });
+  document.querySelectorAll('.panel').forEach(p => {
+    p.classList.toggle('active', p.id === 'panel-' + id);
+  });
+  if (id === 'candidates') renderList();
+  if (id === 'add') renderPills();
+}
+
+// ── Group by position ──
+function byPosition() {
+  const m = {};
+  candidates.forEach(c => { (m[c.position] = m[c.position]||[]).push(c.name); });
+  return m;
+}
+
+// ── Candidate list ──
+function renderList() {
+  const el = document.getElementById('candidateList');
+  if (!candidates.length) {
+    el.innerHTML = `<div class="empty-state">
+      <span class="empty-icon">🗳️</span>
+      <p>No candidates yet.<br>Use the Add tab to<br>build your ballot.</p>
+    </div>`;
+    return;
+  }
+  const groups = byPosition();
+  el.innerHTML = Object.entries(groups).map(([pos, names]) => `
+    <div class="position-group">
+      <div class="pos-header">
+        <span class="pos-name">${pos}</span>
+        <span class="pos-count">${names.length}</span>
+      </div>
+      ${names.map(name => {
+        const idx = candidates.findIndex(c => c.position===pos && c.name===name);
+        const init = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+        return `<div class="candidate-item">
+          <div class="avatar">${init}</div>
+          <div class="c-info">
+            <div class="c-name">${name}</div>
+            <div class="c-pos">${pos}</div>
+          </div>
+          <button class="btn-del" onclick="remove(${idx})">✕</button>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+}
+
+// ── Pills ──
+function renderPills() {
+  const used = new Set(candidates.map(c=>c.position));
+  document.getElementById('pills').innerHTML = POSITIONS.map(p => `
+    <button class="pill ${used.has(p)?'used':''}" onclick="fillPos('${p}')">
+      ${p}${used.has(p)?' ✓':''}
+    </button>`).join('');
+}
+
+function fillPos(p) {
+  document.getElementById('posInput').value = p;
+  document.getElementById('nameInput').focus();
+}
+
+// ── Add / Remove ──
+function addCandidate() {
+  const pos  = document.getElementById('posInput').value.trim();
+  const name = document.getElementById('nameInput').value.trim();
+  if (!pos || !name) {
+    const el = document.getElementById(!pos ? 'posInput' : 'nameInput');
+    el.style.borderColor = '#f62a5b';
+    el.style.boxShadow = '0 0 0 3px rgba(246,42,91,0.2)';
+    setTimeout(() => { el.style.borderColor=''; el.style.boxShadow=''; }, 1200);
+    return;
+  }
+  candidates.push({ position:pos, name });
+  document.getElementById('nameInput').value = '';
+  renderBallot();
+  renderPills();
+  // Success flash
+  const btn = document.getElementById('addBtn');
+  btn.classList.add('success');
+  btn.innerHTML = '✓ Added!';
+  setTimeout(() => {
+    btn.classList.remove('success');
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add to Ballot`;
+  }, 1200);
+}
+
+function remove(i) {
+  candidates.splice(i,1);
+  renderList();
+  renderBallot();
+}
+
+function clearAll() {
+  if (!candidates.length || !confirm('Clear all candidates?')) return;
+  candidates=[];
+  renderList();
+  renderBallot();
+}
+
+// ── Fiducial SVG ──
+function fid(id) {
+  const pats = [
+    [[1,0,1],[0,1,0],[1,0,1]], [[1,1,0],[0,0,1],[1,1,0]],
+    [[0,1,1],[1,0,0],[0,1,1]], [[1,0,0],[0,1,1],[1,0,0]],
+    [[0,1,0],[1,0,1],[0,1,0]], [[1,1,1],[0,0,0],[1,1,1]],
+    [[0,0,1],[1,1,0],[0,0,1]], [[1,0,1],[1,0,1],[0,1,0]],
+    [[0,1,0],[0,0,1],[1,1,0]], [[1,1,0],[1,0,0],[0,1,1]],
+    [[0,0,0],[1,1,1],[0,0,0]], [[1,0,0],[0,0,1],[1,0,0]],
+  ];
+  const p=pats[id%pats.length], cell=18, b=9, t=cell*3+b*2;
+  let cells='';
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++)
+    if(p[r][c]) cells+=`<rect x="${b+c*cell}" y="${b+r*cell}" width="${cell}" height="${cell}" fill="#000"/>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${t} ${t}">
+    <rect width="${t}" height="${t}" fill="white" stroke="black" stroke-width="4"/>
+    <rect x="4" y="4" width="${t-8}" height="${t-8}" fill="white"/>
+    ${cells}
+    <rect x="${b}" y="${b}" width="6" height="6" fill="#000"/>
+    <rect x="${t-b-6}" y="${b}" width="6" height="6" fill="#000"/>
+    <rect x="${b}" y="${t-b-6}" width="6" height="6" fill="#000"/>
+    <rect x="${t-b-6}" y="${t-b-6}" width="6" height="6" fill="#000"/>
+  </svg>`;
+}
+
+// ── Render ballot columns ──
+function renderBallot() {
+  const title = document.getElementById('electionTitle').value || 'General Election';
+  const sub   = document.getElementById('electionSub').value;
+  const raw   = document.getElementById('electionDate').value;
+  const date  = raw
+    ? new Date(raw+'T00:00:00').toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})
+    : 'Date TBD';
+
+  const groups = byPosition();
+  const posEntries = Object.entries(groups);
+  const bid = (() => { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:6},()=>c[Math.floor(Math.random()*c.length)]).join(''); })();
+
+  const makeCol = (ci) => {
+    const sId = String(ci+1).padStart(2,'0');
+    const fb  = ci*4;
+
+    const posHTML = !posEntries.length
+      ? `<div style="font-family:'DM Mono',monospace;font-size:5pt;color:#ccc;text-align:center;padding:4mm 0;">No candidates</div>`
+      : posEntries.map(([pos,names]) => `
+        <div class="b-pos">
+          <div class="b-pos-name">${pos}</div>
+          ${names.map(n=>`<div class="b-cand"><div class="bubble"></div><div class="cname">${n}</div></div>`).join('')}
+        </div>`).join('');
+
+    return `<div class="b-col">
+      <div class="fid tl">${fid(fb+0)}</div>
+      <div class="fid tr">${fid(fb+1)}</div>
+      <div class="fid bl">${fid(fb+2)}</div>
+      <div class="fid br">${fid(fb+3)}</div>
+
+      <div class="b-hdr">
+        <div class="b-title">${title}</div>
+        ${sub?`<div class="b-org">${sub}</div>`:''}
+        <div class="b-rule"><div class="b-diamond"></div></div>
+        <div class="b-date">${date}</div>
+      </div>
+
+      <div class="b-meta">Stub ${sId}/03 · ${bid}-${sId}</div>
+      <div class="b-instr">Fill the ○ bubble for your choice</div>
+
+      <div class="b-positions">${posHTML}</div>
+
+      <div class="b-stamp">${title.substring(0,8).toUpperCase()} · ${sId}</div>
+    </div>`;
+  };
+
+  document.getElementById('ballotPage').innerHTML = makeCol(0)+makeCol(1)+makeCol(2);
+}
+
+// ── Live updates ──
+['electionTitle','electionSub','electionDate'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderBallot);
+  document.getElementById(id).addEventListener('change', renderBallot);
+});
+document.getElementById('nameInput').addEventListener('keydown', e => { if(e.key==='Enter') addCandidate(); });
+
+// ── Init ──
+renderBallot();
+renderList();
+</script>
+</body>
+</html>
